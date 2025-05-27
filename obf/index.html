@@ -5,79 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Roblox Lua Obfuscator</title>
 <style>
-  body {
-    background: #121212;
-    color: #00ff88;
-    font-family: 'Consolas', monospace;
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 30px;
-  }
-  h1 {
-    margin-bottom: 20px;
-    text-shadow: 0 0 10px #00ff88;
-  }
-  textarea {
-    width: 90vw;
-    max-width: 700px;
-    height: 200px;
-    background: #1e1e1e;
-    border: 2px solid #00ff88;
-    border-radius: 8px;
-    color: #00ff88;
-    padding: 15px;
-    font-size: 16px;
-    resize: vertical;
-    box-shadow: 0 0 10px #00ff88;
-    margin-bottom: 20px;
-  }
-  label, button {
-    background: #00ff88;
-    border: none;
-    padding: 12px 25px;
-    margin: 5px;
-    border-radius: 30px;
-    font-weight: bold;
-    cursor: pointer;
-    color: #121212;
-    box-shadow: 0 0 15px #00ff88;
-    user-select: none;
-    transition: background 0.3s ease;
-  }
-  label:hover, button:hover {
-    background: #00cc6a;
-  }
-  input[type="file"] {
-    display: none;
-  }
-  .btn-group {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    max-width: 700px;
-  }
+body {
+  background: #121212;
+  color: #00ff88;
+  font-family: 'Consolas', monospace;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+}
+h1 {
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px #00ff88;
+}
+textarea {
+  width: 90vw;
+  max-width: 700px;
+  height: 200px;
+  background: #1e1e1e;
+  border: 2px solid #00ff88;
+  border-radius: 8px;
+  color: #00ff88;
+  padding: 15px;
+  font-size: 16px;
+  resize: vertical;
+  box-shadow: 0 0 10px #00ff88;
+  margin-bottom: 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+label, button {
+  background: #00ff88;
+  border: none;
+  padding: 12px 25px;
+  margin: 5px;
+  border-radius: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #121212;
+  box-shadow: 0 0 15px #00ff88;
+  user-select: none;
+  transition: background 0.3s ease;
+}
+label:hover, button:hover {
+  background: #00cc6a;
+}
+input[type="file"] {
+  display: none;
+}
+.btn-group {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 700px;
+}
 </style>
 </head>
 <body>
-
 <h1>Roblox Lua Obfuscator</h1>
-
-<textarea id="input" placeholder="Paste your Lua code or upload a file"></textarea>
+<textarea id="input" placeholder="Enter Lua code or choose file"></textarea>
 <textarea id="output" placeholder="Obfuscated code" readonly></textarea>
-
-<label for="fileInput">Upload Lua File</label>
+<label for="fileInput">Choose Lua file</label>
 <input type="file" id="fileInput" accept=".lua,text/plain" />
-
 <div class="btn-group">
   <button id="encode">Obfuscate</button>
   <button id="download">Download</button>
   <button id="copy">Copy</button>
   <button id="clear">Clear</button>
 </div>
-
 <script>
 const input = document.getElementById('input');
 const output = document.getElementById('output');
@@ -91,94 +88,83 @@ fileInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
-    input.value = reader.result;
-  };
+  reader.onload = () => { input.value = reader.result; };
   reader.readAsText(file);
 });
 
-function randomName(len=6) {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let res = '';
-  for(let i=0; i<len; i++) {
-    res += chars.charAt(Math.floor(Math.random()*chars.length));
+const keywords = new Set([
+  'and','break','do','else','elseif','end','false','for','function','goto',
+  'if','in','local','nil','not','or','repeat','return','then','true','until','while'
+]);
+
+function encodeString(str){
+  let res='';for(let i=0;i<str.length;i++)res+=('\\x'+str.charCodeAt(i).toString(16).padStart(2,'0'));
+  return '"'+res+'"';
+}
+
+function obfuscateLua(code){
+  const tokens = code.match(/("[^"]*"|'[^']*'|--.*|[\w]+|[^\s])/g)||[];
+  let map={};
+  let varCount=0;
+  let result = '';
+  for(let i=0;i<tokens.length;i++){
+    let t=tokens[i];
+    if(t.startsWith('--')) { result+=t+' '; continue; }
+    if(t[0]==='"' || t[0]==="'"){
+      const content = t.slice(1,-1);
+      result+=encodeString(content)+' ';
+    } else if(/^[a-zA-Z_]\w*$/.test(t)){
+      if(keywords.has(t)) result+=t+' ';
+      else{
+        if(!map[t]){
+          map[t]='v'+(++varCount);
+        }
+        result+=map[t]+' ';
+      }
+    } else{
+      result+=t+' ';
+    }
   }
-  return '_' + res;
+  return result.trim();
 }
 
-function encodeString(str) {
-  let arr = [];
-  for(let i=0; i<str.length; i++) {
-    arr.push(str.charCodeAt(i));
-  }
-  return 'string.char(' + arr.join(',') + ')';
-}
-
-function obfuscateLua(code) {
-  const keywords = new Set([
-    'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function', 'goto',
-    'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then', 'true', 'until', 'while'
-  ]);
-  const tokenRegex = /([a-zA-Z_]\w*)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)*')/g;
-
-  let map = {};
-  return code.replace(tokenRegex, (match, p1, p2, p3) => {
-    if(p1) {
-      if(keywords.has(p1)) return p1;
-      if(!map[p1]) map[p1] = randomName(6);
-      return map[p1];
-    }
-    if(p2) {
-      const content = p2.slice(1, -1);
-      return encodeString(content);
-    }
-    if(p3) {
-      const content = p3.slice(1, -1);
-      return encodeString(content);
-    }
-    return match;
-  });
-}
-
-encodeBtn.addEventListener('click', () => {
-  if(!input.value.trim()) {
-    alert('Please enter code or upload a file.');
+encodeBtn.onclick = ()=>{
+  if(!input.value.trim()){
+    alert('Please enter Lua code or select a file');
     return;
   }
-  const result = obfuscateLua(input.value);
-  output.value = '-- ziugpro.github.io/obf - Premium\n' + result;
-});
+  output.value = obfuscateLua(input.value);
+};
 
-downloadBtn.addEventListener('click', () => {
-  if(!output.value.trim()) {
-    alert('Nothing to download.');
+downloadBtn.onclick = ()=>{
+  if(!output.value.trim()){
+    alert('No code to download');
     return;
   }
-  const blob = new Blob([output.value], {type: 'text/plain;charset=utf-8'});
+  const blob = new Blob([output.value], {type:'text/plain'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'obfuscated.lua';
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='obfuscated.lua';
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-});
+};
 
-copyBtn.addEventListener('click', () => {
-  if(!output.value.trim()) {
-    alert('Nothing to copy.');
+copyBtn.onclick = ()=>{
+  if(!output.value.trim()){
+    alert('No code to copy');
     return;
   }
-  navigator.clipboard.writeText(output.value).then(() => alert('Copied to clipboard.'));
-});
+  navigator.clipboard.writeText(output.value).then(()=>alert('Copied obfuscated code'));
+};
 
-clearBtn.addEventListener('click', () => {
-  input.value = '';
-  output.value = '';
-  fileInput.value = '';
-});
+clearBtn.onclick = ()=>{
+  input.value='';
+  output.value='';
+  fileInput.value='';
+};
 </script>
-
 </body>
 </html>
