@@ -103,7 +103,7 @@ function encodeString(str){
 }
 
 function obfuscateLua(code){
-  const tokens = code.match(/("[^"]*"|'[^']*'|--.*|[\w]+|[^\s])/g)||[];
+  const tokens = code.match(/("["]"|'[^']'|--|[\w]+|[\s])/g)||[];
   let map={};
   let varCount=0;
   let result = '';
