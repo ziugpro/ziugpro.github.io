@@ -117,7 +117,7 @@ function obfuscateLua(code){
       if(keywords.has(t)) result+=t+' ';
       else{
         if(!map[t]){
-          map[t]='loval v'+(++varCount);
+          map[t]='local v'+(++varCount);
         }
         result+=map[t]+' ';
       }
