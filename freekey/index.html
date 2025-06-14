@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Free Key Premium</title>
+<style>
+  body {
+    margin: 0; 
+    background: #000; 
+    color: #fff; 
+    font-family: Arial, sans-serif; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh;
+  }
+  .frame {
+    width: 320px;
+    background: #000;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    position: relative;
+  }
+  .frame-header {
+    color: #fff;
+    font-weight: bold;
+    font-size: 20px;
+    padding: 12px;
+    border-bottom: 2px solid #fff;
+    text-align: center;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .content {
+    padding: 20px 15px 30px 15px;
+  }
+  #countdown {
+    font-size: 16px;
+    margin-bottom: 15px;
+    text-align: center;
+    min-height: 22px;
+  }
+  #keyBox {
+    display: none;
+    margin-bottom: 15px;
+  }
+  #key {
+    width: 100%;
+    background: #111;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    color: #fff;
+    font-size: 14px;
+    text-align: center;
+    user-select: all;
+  }
+  button {
+    width: 100%;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 0;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px;
+    font-size: 16px;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #ccc;
+  }
+  #resetButton {
+    display: none;
+  }
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #111;
+    padding: 20px;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    z-index: 9999;
+    width: 280px;
+    text-align: center;
+  }
+  .popup input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 15px;
+    border-radius: 6px;
+    border: none;
+    background: #222;
+    color: #fff;
+    font-size: 14px;
+    text-align: center;
+  }
+  .popup button {
+    margin-top: 15px;
+    width: 100%;
+    padding: 10px 0;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="frame-header">Free Key Premium</div>
+    <div class="content">
+      <div id="countdown"></div>
+      <div id="keyBox">
+        <input id="key" readonly />
+      </div>
+      <button id="mainButton">Get Key</button>
+      <button id="resetButton">Reset Timer</button>
+    </div>
+  </div>
+  <div class="popup" id="popup">
+    <div>Enter password to reset:</div>
+    <input type="password" id="passwordInput" placeholder="Password" />
+    <button id="confirmReset">Confirm</button>
+  </div>
+<script>
+const WAIT_TIME = 60000;
+const ONE_HOUR = 3600000;
+
+const keyInput = document.getElementById("key");
+const keyBox = document.getElementById("keyBox");
+const mainButton = document.getElementById("mainButton");
+const resetButton = document.getElementById("resetButton");
+const countdown = document.getElementById("countdown");
+const popup = document.getElementById("popup");
+const passwordInput = document.getElementById("passwordInput");
+const confirmReset = document.getElementById("confirmReset");
+
+function generateKey(len = 32) {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let key = "";
+  for (let i = 0; i < len; i++) {
+    key += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return key;
+}
+
+function format(ms) {
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${h}h ${m}m ${s}s`;
+}
+
+function updateCountdown() {
+  const keyTime = parseInt(localStorage.getItem("keyTime"), 10);
+  if (!keyTime) return;
+  const now = Date.now();
+  const remaining = keyTime + ONE_HOUR - now;
+  if (remaining <= 0) {
+    localStorage.clear();
+    keyBox.style.display = "none";
+    mainButton.innerText = "Get Key";
+    resetButton.style.display = "none";
+    countdown.innerText = "";
+    return;
+  }
+  countdown.innerText = "Key expires in: " + format(remaining);
+}
+
+function startKeyTimer() {
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+}
+
+function startWaitCountdown(ms) {
+  let remaining = Math.floor(ms / 1000);
+  mainButton.disabled = true;
+  countdown.innerText = `Wait: ${remaining}s`;
+  const intv = setInterval(() => {
+    remaining--;
+    countdown.innerText = `Wait: ${remaining}s`;
+    if (remaining <= 0) {
+      clearInterval(intv);
+      countdown.innerText = "";
+      mainButton.disabled = false;
+      mainButton.innerText = "Get Key";
+    }
+  }, 1000);
+}
+
+window.onload = () => {
+  const savedKey = localStorage.getItem("key");
+  const keyTime = parseInt(localStorage.getItem("keyTime"), 10);
+  const delayTime = parseInt(localStorage.getItem("waitUntil"), 10);
+  const now = Date.now();
+
+  if (savedKey && keyTime && now - keyTime < ONE_HOUR) {
+    keyInput.value = savedKey;
+    keyBox.style.display = "block";
+    mainButton.innerText = "Copy";
+    resetButton.style.display = "block";
+    startKeyTimer();
+  } else if (delayTime && now < delayTime) {
+    startWaitCountdown(delayTime - now);
+  }
+};
+
+mainButton.addEventListener("click", () => {
+  if (mainButton.innerText === "Get Key") {
+    mainButton.disabled = true;
+    let wait = 60;
+    countdown.innerText = `Wait: ${wait}s`;
+    const intv = setInterval(() => {
+      wait--;
+      countdown.innerText = `Wait: ${wait}s`;
+      if (wait <= 0) {
+        clearInterval(intv);
+        const key = generateKey();
+        const now = Date.now();
+        localStorage.setItem("key", key);
+        localStorage.setItem("keyTime", now.toString());
+        localStorage.setItem("waitUntil", (now + ONE_HOUR).toString());
+        keyInput.value = key;
+        keyBox.style.display = "block";
+        mainButton.innerText = "Copy";
+        mainButton.disabled = false;
+        countdown.innerText = "Key expires in: 1h 0m 0s";
+        resetButton.style.display = "block";
+        startKeyTimer();
+      }
+    }, 1000);
+  } else if (mainButton.innerText === "Copy") {
+    keyInput.select();
+    document.execCommand("copy");
+  }
+});
+
+resetButton.addEventListener("click", () => {
+  popup.style.display = "block";
+});
+
+confirmReset.addEventListener("click", () => {
+  if (passwordInput.value === "********") {
+    localStorage.clear();
+    location.reload();
+  } else {
+    alert("Wrong password");
+  }
+});
+</script>
+</body>
+  </html>
