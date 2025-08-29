@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Get Key Aura Hub</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      margin: 0;
+    }
+    .container {
+      text-align: center;
+      padding: 30px;
+      border-radius: 18px;
+      background: rgba(20, 20, 20, 0.9);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+      width: 380px;
+      backdrop-filter: blur(8px);
+      animation: fadeIn 0.6s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    h2 {
+      margin-bottom: 22px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #00ffc6;
+      text-shadow: 0 0 8px #00ffc6;
+    }
+    button {
+      background: linear-gradient(135deg, #00ffc6, #00b894);
+      color: #000;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-size: 17px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-weight: 600;
+      width: 100%;
+      margin-top: 12px;
+    }
+    button:hover:enabled {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,255,198,0.5);
+    }
+    button:disabled {
+      background: #444;
+      color: #aaa;
+      cursor: not-allowed;
+    }
+    .key-box, .timer-box {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      display: none;
+      background: #111;
+      width: 100%;
+      box-sizing: border-box;
+      font-weight: bold;
+      text-align: center;
+    }
+    .key-box {
+      color: #0f0;
+      border: 1px solid #00ffc6;
+      letter-spacing: 2px;
+    }
+    .timer-box {
+      color: #ffcc00;
+      border: 1px solid #ffcc00;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Get Key Aura Hub</h2>
+    <button id="mainBtn">Get Key</button>
+    <div id="keyBox" class="key-box"></div>
+    <div id="keyTimer" class="timer-box"></div>
+    <button id="resetBtn">Admin Reset</button>
+  </div>
+
+  <script>
+    const btn = document.getElementById('mainBtn');
+    const keyBox = document.getElementById('keyBox');
+    const keyTimer = document.getElementById('keyTimer');
+    const resetBtn = document.getElementById('resetBtn');
+    let keyInterval, cooldownInterval;
+    let isAdmin = false;
+
+    function randomPart(length) {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let part = "";
+      for (let i = 0; i < length; i++) {
+        part += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return part;
+    }
+    function randomKey() {
+      return "FREE-" + randomPart(5) + "-" + randomPart(5) + "-" + randomPart(3) + "-" + randomPart(5) + "-" + randomPart(5);
+    }
+    function formatTime(seconds) {
+      let h = String(Math.floor(seconds / 3600)).padStart(2, "0");
+      let m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+      let s = String(seconds % 60).padStart(2, "0");
+      return `${h}:${m}:${s}`;
+    }
+    function saveState(data) {
+      localStorage.setItem("auraKeyState", JSON.stringify(data));
+    }
+    function loadState() {
+      let s = localStorage.getItem("auraKeyState");
+      return s ? JSON.parse(s) : null;
+    }
+    function resetAll() {
+      clearInterval(keyInterval);
+      clearInterval(cooldownInterval);
+      keyBox.style.display = "none";
+      keyTimer.style.display = "none";
+      btn.textContent = "Get Key";
+      btn.disabled = false;
+      localStorage.removeItem("auraKeyState");
+    }
+    function startKeyFlow(key, expireAt, nextAvailableAt) {
+      keyBox.textContent = key;
+      keyBox.style.display = "block";
+      keyTimer.style.display = "block";
+      function updateTimers() {
+        let now = Date.now();
+        let keyLeft = Math.floor((expireAt - now) / 1000);
+        let cdLeft = Math.floor((nextAvailableAt - now) / 1000);
+        if (keyLeft > 0) {
+          keyTimer.textContent = `Key expires in: ${formatTime(keyLeft)}`;
+        } else {
+          keyTimer.textContent = "Key expired!";
+          clearInterval(keyInterval);
+        }
+        if (cdLeft > 0) {
+          btn.disabled = true;
+          btn.textContent = `Next key in: ${formatTime(cdLeft)}`;
+        } else {
+          resetAll();
+        }
+      }
+      updateTimers();
+      keyInterval = setInterval(updateTimers, 1000);
+      btn.onclick = () => {
+        navigator.clipboard.writeText(key);
+        btn.textContent = "Copied!";
+        btn.disabled = true;
+      }
+    }
+    btn.addEventListener('click', () => {
+      let state = loadState();
+      if (state) return;
+      let wait = 90;
+      btn.disabled = true;
+      btn.textContent = `Wait: ${formatTime(wait)}`;
+      const countdown = setInterval(() => {
+        wait--;
+        btn.textContent = `Wait: ${formatTime(wait)}`;
+        if (wait <= 0) {
+          clearInterval(countdown);
+          const newKey = randomKey();
+          let expireAt = Date.now() + 7200 * 1000;
+          let nextAvailableAt = Date.now() + 18000 * 1000;
+          saveState({key: newKey, expireAt, nextAvailableAt});
+          startKeyFlow(newKey, expireAt, nextAvailableAt);
+          btn.textContent = "Copy Key";
+          btn.disabled = false;
+        }
+      }, 1000);
+    });
+    resetBtn.addEventListener('click', () => {
+      if (!isAdmin) {
+        let pw = prompt("Enter admin password:");
+        if (pw === "********") {
+          isAdmin = true;
+          resetAll();
+          alert("Admin verified. Cooldown reset. You can get a new key now.");
+        } else {
+          alert("Wrong password!");
+        }
+      } else {
+        resetAll();
+        alert("Cooldown reset by admin.");
+      }
+    });
+    let saved = loadState();
+    if (saved) {
+      if (Date.now() < saved.nextAvailableAt) {
+        startKeyFlow(saved.key, saved.expireAt, saved.nextAvailableAt);
+      } else {
+        resetAll();
+      }
+    }
+  </script>
+</body>
+  </html>
