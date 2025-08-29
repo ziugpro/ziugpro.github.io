@@ -107,7 +107,7 @@
       return part;
     }
     function randomKey() {
-      return "FREE-" + randomPart(5) + "-" + randomPart(5) + "-" + randomPart(3) + "-" + randomPart(5) + "-" + randomPart(5);
+      return "FREE-4H-" + randomPart(5) + "-" + randomPart(5) + "-" + randomPart(3) + "-" + randomPart(5) + "-" + randomPart(5);
     }
     function formatTime(seconds) {
       let h = String(Math.floor(seconds / 3600)).padStart(2, "0");
@@ -116,10 +116,10 @@
       return `${h}:${m}:${s}`;
     }
     function saveState(data) {
-      localStorage.setItem("auraKeyState", JSON.stringify(data));
+      localStorage.setItem("aurakey4h", JSON.stringify(data));
     }
     function loadState() {
-      let s = localStorage.getItem("auraKeyState");
+      let s = localStorage.getItem("aurakey4h");
       return s ? JSON.parse(s) : null;
     }
     function resetAll() {
