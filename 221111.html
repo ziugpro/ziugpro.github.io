@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<title>AURA Key Generator</title>
+<style>
+body { font-family: Arial,sans-serif; background:#0f172a; color:#f1f5f9; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:10px; }
+.container { background:#1e293b; padding:20px; border-radius:12px; width:100%; max-width:400px; box-shadow:0 4px 12px rgba(0,0,0,0.5); }
+h2 { text-align:center; margin-bottom:15px; }
+input[type="number"], input[type="text"], textarea { width:100%; padding:10px; margin:8px 0; border-radius:8px; border:none; font-size:14px; background:#334155; color:#f1f5f9; box-sizing:border-box; }
+textarea { height:180px; resize:none; font-size:12px; line-height:1.4; }
+button { width:100%; padding:10px; border-radius:8px; border:none; margin-top:8px; font-size:14px; background:#3b82f6; color:white; cursor:pointer; transition: background 0.2s; }
+button:hover { background:#2563eb; }
+.actions { display:flex; gap:10px; margin-top:8px; }
+.actions button { flex:1; }
+.toggle { display:flex; align-items:center; justify-content:space-between; margin:10px 0; font-size:14px; }
+.switch { position:relative; display:inline-block; width:40px; height:20px; }
+.switch input { opacity:0; width:0; height:0; }
+.slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#475569; transition:.4s; border-radius:20px; }
+.slider:before { position:absolute; content:""; height:14px; width:14px; left:3px; bottom:3px; background-color:white; transition:.4s; border-radius:50%; }
+input:checked + .slider { background-color:#3b82f6; }
+input:checked + .slider:before { transform:translateX(20px); }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>ðŸ”‘ AURA HUB ðŸ”‘</h2>
+<input id="prefix" type="text" placeholder="Enter prefix (optional)">
+<input id="amount" type="number" value="5" min="1">
+
+<div class="toggle">
+<span>Force AURA if no prefix</span>
+<label class="switch">
+<input id="forceAura" type="checkbox">
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="toggle">
+<span>Custom AURA Format V2</span>
+<label class="switch">
+<input id="customAura" type="checkbox">
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="toggle">
+<span>Random 3-char Section Position</span>
+<label class="switch">
+<input id="randomPos" type="checkbox">
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="toggle">
+<span>Format LuaU ("KEY", )</span>
+<label class="switch">
+<input id="format" type="checkbox">
+<span class="slider"></span>
+</label>
+</div>
+
+<button id="generateBtn">Generate</button>
+<div class="actions">
+<button id="copyBtn">Copy</button>
+<button id="downloadBtn">Download</button>
+</div>
+
+<textarea id="output" readonly></textarea>
+</div>
+
+<script>
+let rawKeys=[];
+
+function randomSection(len){
+  const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let str="";
+  for(let i=0;i<len;i++) str+=chars.charAt(Math.floor(Math.random()*chars.length));
+  return str;
+}
+
+function generateKeys(){
+  const amount=parseInt(document.getElementById("amount").value)||1;
+  const prefix=document.getElementById("prefix").value.trim().toUpperCase();
+  const forceAura=document.getElementById("forceAura").checked;
+  const customAura=document.getElementById("customAura").checked;
+  const randomPos=document.getElementById("randomPos").checked;
+  rawKeys=[];
+  
+  for(let i=0;i<amount;i++){
+    let base="";
+    
+    if(customAura){
+      base="AURA-V2-"+randomSection(3)+"-"+randomSection(5)+"-"+randomSection(5)+"-"+randomSection(5)+"-"+randomSection(5);
+    } else if(prefix || forceAura){
+      // base sections chuáº©n 5-5-3-5-5
+      let sections=[5,5,3,5,5];
+      if(randomPos){
+        for(let j=sections.length-1;j>0;j--){
+          let k=Math.floor(Math.random()*(j+1));
+          [sections[j],sections[k]]=[sections[k],sections[j]];
+        }
+      }
+      let keySections=sections.map(len=>randomSection(len));
+      if(prefix) base=prefix+"-"+keySections.join("-");
+      else base="AURA-"+keySections.join("-");
+    } else {
+      // prefix trá»‘ng + forceAura táº¯t => 5-5-5-5-5
+      base=randomSection(5)+"-"+randomSection(5)+"-"+randomSection(5)+"-"+randomSection(5)+"-"+randomSection(5);
+    }
+    
+    rawKeys.push(base);
+  }
+  
+  updateOutput();
+}
+
+function updateOutput(){
+  const format=document.getElementById("format").checked;
+  let lines=rawKeys.map(k=>{
+    let key=k;
+    if(format) key=`"${key}",`;
+    return key;
+  });
+  document.getElementById("output").value=lines.join("\n");
+}
+
+document.getElementById("generateBtn").addEventListener("click",generateKeys);
+document.getElementById("forceAura").addEventListener("change",updateOutput);
+document.getElementById("customAura").addEventListener("change",updateOutput);
+document.getElementById("randomPos").addEventListener("change",updateOutput);
+document.getElementById("prefix").addEventListener("input",updateOutput);
+document.getElementById("format").addEventListener("change",updateOutput);
+
+document.getElementById("copyBtn").addEventListener("click",()=>{
+  const output=document.getElementById("output");
+  output.select();
+  navigator.clipboard.writeText(output.value);
+});
+
+document.getElementById("downloadBtn").addEventListener("click",()=>{
+  const blob=new Blob([document.getElementById("output").value],{type:"text/plain"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="keys.txt";
+  link.click();
+});
+</script>
+</body>
+  </html>
